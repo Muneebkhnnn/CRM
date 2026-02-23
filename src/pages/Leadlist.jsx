@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import axios from 'axios'
+import axios, { all } from 'axios'
 import Leadform from '../components/Leadform'
 function Leadlist() {
 
@@ -7,6 +7,7 @@ function Leadlist() {
     const [open, setOpen] = useState(false)
     const [editinglead, setEditinglead] = useState({})
     const [isEditing, setIsEditing] = useState(false)
+    const [searchValue, setSearchValue] = useState('')
 
     const getLeads = async () => {
         try {
@@ -47,6 +48,30 @@ function Leadlist() {
         setIsEditing(true)
     }
 
+    const handleChange = (e) => {
+        const { name, value } = e.target
+        console.log(name, value)
+        console.log(editinglead)
+
+        setEditinglead(lead => ({
+            ...lead,
+            ...(name === 'company' 
+                ? { company: { ...lead.company, name: value } }
+                : { [name]: value })
+        }))
+    }
+
+    const handleSave=()=>{
+        const allLeads=leads.slice()
+        const newLeads=allLeads.map((lead)=>{
+           return lead.id===editinglead.id?lead=editinglead:lead      
+        })
+        setleads(newLeads)
+        console.log(newLeads)
+        setIsEditing(false)
+        setEditinglead({})
+    }
+
     return (
         <>
             {open && (
@@ -54,7 +79,7 @@ function Leadlist() {
             )}
 
             <div className={` ${open ? 'opacity-50' : ''} min-h-screen pt-16`}>
-                <div className='flex gap-6 mt-2.5 ml-4 relative'>
+                <div className='flex gap-6 mt-2.5 ml-4 justify-baseline'>
                     <select name="Status" className="px-4 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
                         <option value="">Filter By</option>
                         <option value="New">New</option>
@@ -63,16 +88,18 @@ function Leadlist() {
                         <option value="Converted">Converted</option>
                         <option value="Lost">Lost</option>
                     </select>
-                    <span className='relative border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm'>
+                    <span className='flex justify-center items-center border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm'>
 
                         <input
-                            className="px-4 py-2 pr-10 "
+                            value={searchValue}
+                            onChange={(e)=>setSearchValue(e.target.value)}
+                            className="px-3 py-2 pr-6 border-none"
                             type="text"
                             placeholder='Search by Name, Company name'
 
                         />
                         <svg
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
+                            className="mr-3 w-4 h-4 text-gray-400"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -86,7 +113,7 @@ function Leadlist() {
                         </svg>
                     </span>
 
-                    <span className='absolute right-12'>
+                    <span className=''>
                         <button onClick={() => setOpen(true)} className='cursor-pointer  px-2 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm'>Add Lead 📃</button>
                     </span>
 
@@ -108,16 +135,16 @@ function Leadlist() {
 
                         <tbody>
                             {leads.map((lead) =>
-                                editinglead.id === lead.id ? (
+                                isEditing && editinglead.id === lead.id ? (
                                     <tr key={lead.id} className={`${lead.id % 2 == 0 ? 'bg-slate-200' : ''} border-b cursor-pointer`}>
                                         <td className="p-4">{lead.id}</td>
                                         <td className="p-4">
-                                            <input type="text" value={lead.name} />
+                                            <input className="p-1.5" onChange={(e) => handleChange(e)} type="text" name='name' value={editinglead.name} />
                                         </td>
-                                        <td className="p-4">{lead.email}</td>
-                                        <td className="p-4">{lead.phone}</td>
-                                        <td className="p-4">{lead.company.name}</td>
-                                        <td className="p-4">{lead.website}</td>
+                                        <td className="p-4"> <input onChange={(e) => handleChange(e)} className="p-1.5" type="email" name='email' value={editinglead.email} /></td>
+                                        <td className="p-4"> <input onChange={(e) => handleChange(e)} className="p-1.5" type="text" name='phone' value={editinglead.phone} /></td>
+                                        <td className="p-4"> <input onChange={(e) => handleChange(e)} className="p-1.5" type="text" name='company' value={editinglead.company.name} /></td>
+                                        <td className="p-4"><input onChange={(e) => handleChange(e)} className="p-1.5" type="text" name='website' value={editinglead.website} /></td>
                                         <td className="p-4">
                                             <select name="Status" className="border rounded px-2 py-1">
                                                 <option value="">{lead.status ?? 'select'}</option>
@@ -157,11 +184,11 @@ function Leadlist() {
                                     </tr>
                                 )
                             )}
-                    </tbody>
-                </table>
+                        </tbody>
+                    </table>
 
-            </div>
-        </div >
+                </div>
+            </div >
         </>
     )
 }
