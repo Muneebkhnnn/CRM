@@ -55,21 +55,37 @@ function Leadlist() {
 
         setEditinglead(lead => ({
             ...lead,
-            ...(name === 'company' 
+            ...(name === 'company'
                 ? { company: { ...lead.company, name: value } }
                 : { [name]: value })
         }))
     }
 
-    const handleSave=()=>{
-        const allLeads=leads.slice()
-        const newLeads=allLeads.map((lead)=>{
-           return lead.id===editinglead.id?lead=editinglead:lead      
+    const handleSave = () => {
+        const allLeads = leads.slice()
+        const newLeads = allLeads.map((lead) => {
+            return lead.id === editinglead.id ? lead = editinglead : lead
         })
         setleads(newLeads)
         console.log(newLeads)
         setIsEditing(false)
         setEditinglead({})
+    }
+
+    const filteredLeads = leads.filter((lead) => {
+        if (!searchValue.trim()) return leads
+        if (lead.name.toLowerCase().includes(value) || lead.company.name.includes(value)) {
+            return lead
+        }
+        console.log(filteredLeads)
+    })
+
+    const handleSearch = (name) => {
+        const value = name.toLowerCase()
+        console.log(value)
+        setSearchValue(value)
+        filteredLeads()
+
     }
 
     return (
@@ -92,7 +108,7 @@ function Leadlist() {
 
                         <input
                             value={searchValue}
-                            onChange={(e)=>setSearchValue(e.target.value)}
+                            onChange={(e) => handleSearch(e.target.value)}
                             className="px-3 py-2 pr-6 border-none"
                             type="text"
                             placeholder='Search by Name, Company name'
@@ -134,7 +150,7 @@ function Leadlist() {
                         </thead>
 
                         <tbody>
-                            {leads.map((lead) =>
+                            {filteredLeads.map((lead) =>
                                 isEditing && editinglead.id === lead.id ? (
                                     <tr key={lead.id} className={`${lead.id % 2 == 0 ? 'bg-slate-200' : ''} border-b cursor-pointer`}>
                                         <td className="p-4">{lead.id}</td>
