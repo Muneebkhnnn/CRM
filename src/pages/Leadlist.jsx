@@ -73,18 +73,15 @@ function Leadlist() {
     }
 
     const filteredLeads = leads.filter((lead) => {
-        if (!searchValue.trim()) return leads
-        if (lead.name.toLowerCase().includes(value) || lead.company.name.includes(value)) {
-            return lead
-        }
-        console.log(filteredLeads)
+        if (!searchValue.trim()) return true
+        return lead.name.toLowerCase().includes(searchValue) || 
+               lead.company.name.toLowerCase().includes(searchValue)
     })
 
     const handleSearch = (name) => {
         const value = name.toLowerCase()
         console.log(value)
         setSearchValue(value)
-        filteredLeads()
 
     }
 
@@ -109,7 +106,7 @@ function Leadlist() {
                         <input
                             value={searchValue}
                             onChange={(e) => handleSearch(e.target.value)}
-                            className="px-3 py-2 pr-6 border-none"
+                            className="px-3 py-2 pr-6 focus:outline-none"
                             type="text"
                             placeholder='Search by Name, Company name'
 
