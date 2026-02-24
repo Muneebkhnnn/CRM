@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import axios, { all } from 'axios'
+import axios from 'axios'
 import Leadform from '../components/Leadform'
 function Leadlist() {
 
@@ -40,7 +40,7 @@ function Leadlist() {
 
     const handleDelete = (id) => {
         setleads((leads) => {
-            return leads.filter(lead => lead.id != id)
+            return leads.filter(lead => lead.id !== id)
         })
     }
 
@@ -65,7 +65,7 @@ function Leadlist() {
     const handleSave = () => {
         const allLeads = leads.slice()
         const newLeads = allLeads.map((lead) => {
-            return lead.id === editinglead.id ? lead = editinglead : lead
+            return lead.id === editinglead.id ? editinglead : lead
         })
         setleads(newLeads)
         console.log(newLeads)
@@ -73,11 +73,31 @@ function Leadlist() {
         setEditinglead({})
     }
 
+
     let filteredLeads = leads.filter((lead) => {
-        if (!searchValue.trim()) return true
-        return lead.name.toLowerCase().includes(searchValue) ||
-            lead.company.name.toLowerCase().includes(searchValue)
-    })
+
+        if (!(searchValue.trim()) && !filteredStatus) return true;
+
+
+        if (filteredStatus && searchValue) {
+            return (
+                lead.status === filteredStatus &&
+                (
+                    lead.name.toLowerCase().includes(searchValue) ||
+                    lead.company?.name?.toLowerCase().includes(searchValue)
+                )
+            );
+        }
+        else if (filteredStatus) {
+            return lead.status === filteredStatus;
+        }
+        else {
+            return (
+                lead.name.toLowerCase().includes(searchValue) ||
+                lead.company?.name?.toLowerCase().includes(searchValue)
+            );
+        }
+    });
 
     console.log(filteredLeads)
 
@@ -89,6 +109,7 @@ function Leadlist() {
     }
 
     const handleStatusFilter = (statusFilter) => {
+        console.log(statusFilter)
         setfilteredStatus(statusFilter)
     }
 
@@ -100,7 +121,12 @@ function Leadlist() {
             )
         })
 
+        setEditinglead(prev =>
+            prev.id === id ? { ...prev, status } : prev
+        )
+
     }
+    console.log(leads)
 
     return (
         <>
@@ -110,7 +136,7 @@ function Leadlist() {
 
             <div className={` ${open ? 'opacity-50' : ''} min-h-screen pt-16`}>
                 <div className='flex gap-6 mt-2.5 ml-4 justify-baseline'>
-                    <select name="Status" className="px-4 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                    <select onChange={(e) => handleStatusFilter(e.target.value)} name="Status" className="px-4 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
                         <option value="">Filter By</option>
                         <option value="New">New</option>
                         <option value="Contacted">Contacted</option>
@@ -166,19 +192,19 @@ function Leadlist() {
                         <tbody>
                             {filteredLeads.map((lead) =>
                                 isEditing && editinglead.id === lead.id ? (
-                                    <tr key={lead.id} className={`${lead.id % 2 == 0 ? 'bg-slate-200' : ''} border-b cursor-pointer`}>
+                                    <tr key={lead.id} className={`${lead.id % 2 === 0 ? 'bg-slate-200' : ''} border-b cursor-pointer`}>
                                         <td className="p-4">{lead.id}</td>
                                         <td className="p-4">
                                             <input className="p-1.5" onChange={(e) => handleChange(e)} type="text" name='name' value={editinglead.name} />
                                         </td>
                                         <td className="p-4"> <input onChange={(e) => handleChange(e)} className="p-1.5" type="email" name='email' value={editinglead.email} /></td>
                                         <td className="p-4"> <input onChange={(e) => handleChange(e)} className="p-1.5" type="text" name='phone' value={editinglead.phone} /></td>
-                                        <td className="p-4"> <input onChange={(e) => handleChange(e)} className="p-1.5" type="text" name='company' value={editinglead.company.name} /></td>
+                                        <td className="p-4"> <input onChange={(e) => handleChange(e)} className="p-1.5" type="text" name='company' value={editinglead.company?.name || ''} /></td>
                                         <td className="p-4"><input onChange={(e) => handleChange(e)} className="p-1.5" type="text" name='website' value={editinglead.website} /></td>
                                         <td className="p-4">
                                             <select
                                                 className="border rounded px-2 py-1"
-                                                value={lead.status ?? 'select'}
+                                                value={editinglead.status ?? 'select'}
                                                 onChange={(e) => handleStatusChange(lead.id, e.target.value)}
                                             >
                                                 <option value="">{lead.status ?? 'select'}</option>
@@ -194,7 +220,7 @@ function Leadlist() {
                                         </td>
                                     </tr>
                                 ) : (
-                                    <tr key={lead.id} className={`${lead.id % 2 == 0 ? 'bg-slate-200' : ''} border-b cursor-pointer`}>
+                                    <tr key={lead.id} className={`${lead.id % 2 === 0 ? 'bg-slate-200' : ''} border-b cursor-pointer`}>
                                         <td className="p-4">{lead.id}</td>
                                         <td className="p-4">{lead.name}</td>
                                         <td className="p-4">{lead.email}</td>
