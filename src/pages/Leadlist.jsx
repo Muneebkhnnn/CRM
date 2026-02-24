@@ -8,6 +8,7 @@ function Leadlist() {
     const [editinglead, setEditinglead] = useState({})
     const [isEditing, setIsEditing] = useState(false)
     const [searchValue, setSearchValue] = useState('')
+    const [filteredStatus, setfilteredStatus] = useState('')
 
     const getLeads = async () => {
         try {
@@ -72,16 +73,32 @@ function Leadlist() {
         setEditinglead({})
     }
 
-    const filteredLeads = leads.filter((lead) => {
+    let filteredLeads = leads.filter((lead) => {
         if (!searchValue.trim()) return true
-        return lead.name.toLowerCase().includes(searchValue) || 
-               lead.company.name.toLowerCase().includes(searchValue)
+        return lead.name.toLowerCase().includes(searchValue) ||
+            lead.company.name.toLowerCase().includes(searchValue)
     })
+
+    console.log(filteredLeads)
 
     const handleSearch = (name) => {
         const value = name.toLowerCase()
         console.log(value)
         setSearchValue(value)
+
+    }
+
+    const handleStatusFilter = (statusFilter) => {
+        setfilteredStatus(statusFilter)
+    }
+
+    const handleStatusChange = (id, status) => {
+
+        setleads((prev) => {
+            return prev.map(lead =>
+                lead.id === id ? { ...lead, status: status } : lead
+            )
+        })
 
     }
 
@@ -159,7 +176,11 @@ function Leadlist() {
                                         <td className="p-4"> <input onChange={(e) => handleChange(e)} className="p-1.5" type="text" name='company' value={editinglead.company.name} /></td>
                                         <td className="p-4"><input onChange={(e) => handleChange(e)} className="p-1.5" type="text" name='website' value={editinglead.website} /></td>
                                         <td className="p-4">
-                                            <select name="Status" className="border rounded px-2 py-1">
+                                            <select
+                                                className="border rounded px-2 py-1"
+                                                value={lead.status ?? 'select'}
+                                                onChange={(e) => handleStatusChange(lead.id, e.target.value)}
+                                            >
                                                 <option value="">{lead.status ?? 'select'}</option>
                                                 <option value="New">New</option>
                                                 <option value="Contacted">Contacted</option>
@@ -181,7 +202,7 @@ function Leadlist() {
                                         <td className="p-4">{lead.company.name}</td>
                                         <td className="p-4">{lead.website}</td>
                                         <td className="p-4">
-                                            <select name="Status" className="border rounded px-2 py-1">
+                                            <select disabled name="Status" className="border rounded px-2 py-1">
                                                 <option value="">{lead.status ?? 'select'}</option>
                                                 <option value="New">New</option>
                                                 <option value="Contacted">Contacted</option>
