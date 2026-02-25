@@ -19,7 +19,7 @@ function Leadform({ onClose, onSubmit }) {
             ...prev,
             [name]: value
         }))
-        // Clear error when user starts typing
+
         if (errors[name]) {
             setErrors(prev => ({
                 ...prev,
@@ -64,7 +64,7 @@ function Leadform({ onClose, onSubmit }) {
         
         if (validateForm()) {
             onSubmit(formData)
-            // Reset form
+
             setFormData({
                 name: '',
                 email: '',
