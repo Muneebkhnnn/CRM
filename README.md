@@ -64,7 +64,7 @@ A React-based Lead Management application that allows users to manage sales lead
 
 ---
 
-## Screenshots
+## Screenshots of the Application
 
 ![alt text](image.png)
 ![alt text](image-1.png)
