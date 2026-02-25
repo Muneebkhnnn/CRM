@@ -7,7 +7,8 @@ function Leadform({ onClose, onSubmit }) {
         phone: '',
         company: '',
         leadSource: '',
-        leadStatus: 'New'
+        leadStatus: 'New',
+        notes: ''
     })
 
     const [errors, setErrors] = useState({})
@@ -70,7 +71,8 @@ function Leadform({ onClose, onSubmit }) {
                 phone: '',
                 company: '',
                 leadSource: '',
-                leadStatus: 'New'
+                leadStatus: 'New',
+                notes: ''
             })
         }
     }
@@ -208,6 +210,22 @@ function Leadform({ onClose, onSubmit }) {
                                 <option value="Lost">Lost</option>
                             </select>
                         </div>
+
+                        {/* Notes Field */}
+                        <div>
+                            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+                                Notes <span className="text-gray-400 text-xs">(Optional)</span>
+                            </label>
+                            <textarea
+                                id="notes"
+                                name="notes"
+                                value={formData.notes}
+                                onChange={handleChange}
+                                rows={3}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                placeholder="Any additional notes about this lead..."
+                            />
+                        </div>
                     </div>
 
                     {/* Form Actions */}
@@ -232,4 +250,4 @@ function Leadform({ onClose, onSubmit }) {
     )
 }
 
-export default Leadform
+export default React.memo(Leadform)

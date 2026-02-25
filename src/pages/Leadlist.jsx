@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import axios from 'axios'
 import Leadform from '../components/Leadform'
+import LeadRow from '../components/LeadRow'
 function Leadlist() {
 
     const [leads, setleads] = useState([])
@@ -13,36 +14,100 @@ function Leadlist() {
     const getLeads = async () => {
         try {
             const response = await axios.get('https://jsonplaceholder.typicode.com/users')
-            console.log(response.data)
-            setleads(response.data)
+            const leadsWithStatus = response.data.map(lead => ({
+                ...lead,
+                status: 'New',
+                notes: ''
+            }));
+
+            setleads(leadsWithStatus);
+            console.log(leadsWithStatus)
         } catch (error) {
             console.error(error)
         }
+
     }
 
     useEffect(() => {
-        getLeads()
-        console.log('render')
-    }, [])
+        if (leads.length === 0) return;
 
-    const handleSubmit = (newLead) => {
-        setleads([...leads, {
-            id: leads.length + 1,
+        localStorage.setItem(
+            'leadsData',
+            JSON.stringify(leads)
+        );
+    }, [leads]);
+
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+
+            const stateToStore = {
+                searchValue,
+                filteredStatus
+            };
+
+            localStorage.setItem(
+                'leadsStorageKey',
+                JSON.stringify(stateToStore)
+            );
+
+        }, 300);
+
+        return () => clearTimeout(timeout);
+
+    }, [searchValue, filteredStatus]);
+
+    useEffect(() => {
+        const store = localStorage.getItem('leadsStorageKey');
+        if (!store) return;
+
+        try {
+            const parse = JSON.parse(store);
+
+            setSearchValue(parse.searchValue ?? '');
+            setfilteredStatus(parse.filteredStatus ?? '');
+
+        } catch (error) {
+            console.log('Failed to parse localStorage:', error);
+        }
+
+    }, []);
+
+    useEffect(() => {
+        const storedLeads = localStorage.getItem('leadsData');
+
+        if (storedLeads) {
+            try {
+                setleads(JSON.parse(storedLeads));
+                return; 
+            } catch (error) {
+                console.log('Failed to restore leads:', error);
+            }
+        }
+
+        getLeads(); 
+        
+
+    }, []);
+
+    const handleSubmit = useCallback((newLead) => {
+        setleads(prev => [...prev, {
+            id: Math.max(...prev.map(l => l.id), 0) + 1,
             name: newLead.name,
             email: newLead.email,
             phone: newLead.phone,
             company: { name: newLead.company },
             website: newLead.leadSource,
-            status: newLead.leadStatus
+            status: newLead.leadStatus,
+            notes: newLead.notes ?? ''
         }])
         setOpen(false)
-    }
+    }, [])
 
-    const handleDelete = (id) => {
+    const handleDelete = useCallback((id) => {
         setleads((leads) => {
             return leads.filter(lead => lead.id !== id)
         })
-    }
+    }, [])
 
     const handleEdit = (lead) => {
         setEditinglead(lead)
@@ -73,8 +138,9 @@ function Leadlist() {
         setEditinglead({})
     }
 
-
-    let filteredLeads = leads.filter((lead) => {
+   
+    let filteredLeads = useMemo(()=>{
+        return leads.filter((lead) => {
 
         if (!(searchValue.trim()) && !filteredStatus) return true;
 
@@ -97,23 +163,64 @@ function Leadlist() {
                 lead.company?.name?.toLowerCase().includes(searchValue)
             );
         }
-    });
+    })},[searchValue,filteredStatus,leads]);
 
     console.log(filteredLeads)
 
-    const handleSearch = (name) => {
+    const handleSearch = useCallback((name) => {
         const value = name.toLowerCase()
         console.log(value)
         setSearchValue(value)
 
+    }, [])
+
+    const handleDownloadCSV = useCallback(() => {
+
+    if (!filteredLeads.length) {
+        alert('No leads to download');
+        return;
     }
 
-    const handleStatusFilter = (statusFilter) => {
+const headers = ['ID', 'Name', 'Email', 'Phone', 'Company', 'Lead Source', 'Status', 'Notes'];
+
+        const rows = filteredLeads.map(lead => [
+            lead.id,
+            lead.name,
+            lead.email,
+            lead.phone,
+            lead.company?.name ?? '',
+            lead.website ?? '',
+            lead.status,
+            lead.notes ?? ''
+    ]);
+
+    const csvContent = [headers, ...rows]
+        .map(row =>
+            row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(',')
+        )
+        .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `leads_${filteredStatus || 'all'}.csv`;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
+
+}, [filteredLeads, filteredStatus]);
+
+    const handleStatusFilter = useCallback((statusFilter) => {
         console.log(statusFilter)
         setfilteredStatus(statusFilter)
-    }
+    }, [])
 
-    const handleStatusChange = (id, status) => {
+    const handleStatusChange = useCallback((id, status) => {
 
         setleads((prev) => {
             return prev.map(lead =>
@@ -125,7 +232,7 @@ function Leadlist() {
             prev.id === id ? { ...prev, status } : prev
         )
 
-    }
+    }, [])
     console.log(leads)
 
     return (
@@ -136,7 +243,7 @@ function Leadlist() {
 
             <div className={` ${open ? 'opacity-50' : ''} min-h-screen pt-16`}>
                 <div className='flex gap-6 mt-2.5 ml-4 justify-baseline'>
-                    <select onChange={(e) => handleStatusFilter(e.target.value)} name="Status" className="px-4 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                    <select value={filteredStatus} onChange={(e) => handleStatusFilter(e.target.value)} name="Status" className="px-4 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
                         <option value="">Filter By</option>
                         <option value="New">New</option>
                         <option value="Contacted">Contacted</option>
@@ -173,6 +280,10 @@ function Leadlist() {
                         <button onClick={() => setOpen(true)} className='cursor-pointer  px-2 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm'>Add Lead 📃</button>
                     </span>
 
+                    <span className=''>
+                        <button onClick={handleDownloadCSV} className='cursor-pointer px-2 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm'>Download CSV ⬇️</button>
+                    </span>
+
                 </div>
                 <div className="overflow-x-auto mx-8 my-6 bg-white rounded-lg shadow-sm border border-gray-200">
                     <table className="w-full h-full text-sm ">
@@ -185,64 +296,24 @@ function Leadlist() {
                                 <th className="p-4 text-left font-semibold">Company name</th>
                                 <th className="p-4 text-left font-semibold">Lead Source</th>
                                 <th className="p-4 text-left font-semibold">Lead Status</th>
+                                <th className="p-4 text-left font-semibold">Notes</th>
                                 <th className="p-4 text-left font-semibold">Actions</th>
                             </tr>
                         </thead>
 
                         <tbody>
                             {filteredLeads.map((lead) =>
-                                isEditing && editinglead.id === lead.id ? (
-                                    <tr key={lead.id} className={`${lead.id % 2 === 0 ? 'bg-slate-200' : ''} border-b cursor-pointer`}>
-                                        <td className="p-4">{lead.id}</td>
-                                        <td className="p-4">
-                                            <input className="p-1.5" onChange={(e) => handleChange(e)} type="text" name='name' value={editinglead.name} />
-                                        </td>
-                                        <td className="p-4"> <input onChange={(e) => handleChange(e)} className="p-1.5" type="email" name='email' value={editinglead.email} /></td>
-                                        <td className="p-4"> <input onChange={(e) => handleChange(e)} className="p-1.5" type="text" name='phone' value={editinglead.phone} /></td>
-                                        <td className="p-4"> <input onChange={(e) => handleChange(e)} className="p-1.5" type="text" name='company' value={editinglead.company?.name || ''} /></td>
-                                        <td className="p-4"><input onChange={(e) => handleChange(e)} className="p-1.5" type="text" name='website' value={editinglead.website} /></td>
-                                        <td className="p-4">
-                                            <select
-                                                className="border rounded px-2 py-1"
-                                                value={editinglead.status ?? 'select'}
-                                                onChange={(e) => handleStatusChange(lead.id, e.target.value)}
-                                            >
-                                                <option value="">{lead.status ?? 'select'}</option>
-                                                <option value="New">New</option>
-                                                <option value="Contacted">Contacted</option>
-                                                <option value="Follow-up">Follow-up</option>
-                                                <option value="Converted">Converted</option>
-                                                <option value="Lost">Lost</option>
-                                            </select>
-                                        </td>
-                                        <td className="p-4 space-x-2">
-                                            <button onClick={() => handleSave()} className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">Save ✅</button>
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    <tr key={lead.id} className={`${lead.id % 2 === 0 ? 'bg-slate-200' : ''} border-b cursor-pointer`}>
-                                        <td className="p-4">{lead.id}</td>
-                                        <td className="p-4">{lead.name}</td>
-                                        <td className="p-4">{lead.email}</td>
-                                        <td className="p-4">{lead.phone}</td>
-                                        <td className="p-4">{lead.company.name}</td>
-                                        <td className="p-4">{lead.website}</td>
-                                        <td className="p-4">
-                                            <select disabled name="Status" className="border rounded px-2 py-1">
-                                                <option value="">{lead.status ?? 'select'}</option>
-                                                <option value="New">New</option>
-                                                <option value="Contacted">Contacted</option>
-                                                <option value="Follow-up">Follow-up</option>
-                                                <option value="Converted">Converted</option>
-                                                <option value="Lost">Lost</option>
-                                            </select>
-                                        </td>
-                                        <td className="p-4 space-x-2">
-                                            <button onClick={() => handleEdit(lead)} className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">Edit</button>
-                                            <button onClick={() => handleDelete(lead.id)} className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600">Delete</button>
-                                        </td>
-                                    </tr>
-                                )
+                                <LeadRow
+                                    key={lead.id}
+                                    lead={lead}
+                                    isEditing={isEditing}
+                                    editinglead={editinglead}
+                                    handleChange={handleChange}
+                                    handleStatusChange={handleStatusChange}
+                                    handleSave={handleSave}
+                                    handleEdit={handleEdit}
+                                    handleDelete={handleDelete}
+                                />
                             )}
                         </tbody>
                     </table>
@@ -252,19 +323,5 @@ function Leadlist() {
         </>
     )
 }
-/* Lead Name
-• Email
-• Phone Number
-• Company Name
-• Lead Source (Website / Referral / LinkedIn / Other)
-• Lead Status
-o New
-o Contacted
-o Follow-up
-o Converted
-o Lost
-Each lead must have:
-• Edit button
-• Delete button */
 
 export default Leadlist
