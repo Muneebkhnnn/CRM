@@ -78,14 +78,14 @@ function Leadlist() {
         if (storedLeads) {
             try {
                 setleads(JSON.parse(storedLeads));
-                return; 
+                return;
             } catch (error) {
                 console.log('Failed to restore leads:', error);
             }
         }
 
-        getLeads(); 
-        
+        getLeads();
+
 
     }, []);
 
@@ -138,32 +138,33 @@ function Leadlist() {
         setEditinglead({})
     }
 
-   
-    let filteredLeads = useMemo(()=>{
+
+    let filteredLeads = useMemo(() => {
         return leads.filter((lead) => {
 
-        if (!(searchValue.trim()) && !filteredStatus) return true;
+            if (!(searchValue.trim()) && !filteredStatus) return true;
 
 
-        if (filteredStatus && searchValue) {
-            return (
-                lead.status === filteredStatus &&
-                (
+            if (filteredStatus && searchValue) {
+                return (
+                    lead.status === filteredStatus &&
+                    (
+                        lead.name.toLowerCase().includes(searchValue) ||
+                        lead.company?.name?.toLowerCase().includes(searchValue)
+                    )
+                );
+            }
+            else if (filteredStatus) {
+                return lead.status === filteredStatus;
+            }
+            else {
+                return (
                     lead.name.toLowerCase().includes(searchValue) ||
                     lead.company?.name?.toLowerCase().includes(searchValue)
-                )
-            );
-        }
-        else if (filteredStatus) {
-            return lead.status === filteredStatus;
-        }
-        else {
-            return (
-                lead.name.toLowerCase().includes(searchValue) ||
-                lead.company?.name?.toLowerCase().includes(searchValue)
-            );
-        }
-    })},[searchValue,filteredStatus,leads]);
+                );
+            }
+        })
+    }, [searchValue, filteredStatus, leads]);
 
     console.log(filteredLeads)
 
@@ -176,12 +177,12 @@ function Leadlist() {
 
     const handleDownloadCSV = useCallback(() => {
 
-    if (!filteredLeads.length) {
-        alert('No leads to download');
-        return;
-    }
+        if (!filteredLeads.length) {
+            alert('No leads to download');
+            return;
+        }
 
-const headers = ['ID', 'Name', 'Email', 'Phone', 'Company', 'Lead Source', 'Status', 'Notes'];
+        const headers = ['ID', 'Name', 'Email', 'Phone', 'Company', 'Lead Source', 'Status', 'Notes'];
 
         const rows = filteredLeads.map(lead => [
             lead.id,
@@ -192,28 +193,28 @@ const headers = ['ID', 'Name', 'Email', 'Phone', 'Company', 'Lead Source', 'Stat
             lead.website ?? '',
             lead.status,
             lead.notes ?? ''
-    ]);
+        ]);
 
-    const csvContent = [headers, ...rows]
-        .map(row =>
-            row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(',')
-        )
-        .join('\n');
+        const csvContent = [headers, ...rows]
+            .map(row =>
+                row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(',')
+            )
+            .join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
 
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `leads_${filteredStatus || 'all'}.csv`;
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `leads_${filteredStatus || 'all'}.csv`;
 
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
 
-    URL.revokeObjectURL(url);
+        URL.revokeObjectURL(url);
 
-}, [filteredLeads, filteredStatus]);
+    }, [filteredLeads, filteredStatus]);
 
     const handleStatusFilter = useCallback((statusFilter) => {
         console.log(statusFilter)
@@ -242,50 +243,49 @@ const headers = ['ID', 'Name', 'Email', 'Phone', 'Company', 'Lead Source', 'Stat
             )}
 
             <div className={` ${open ? 'opacity-50' : ''} min-h-screen pt-16`}>
-                <div className='flex gap-6 mt-2.5 ml-4 justify-baseline'>
-                    <select value={filteredStatus} onChange={(e) => handleStatusFilter(e.target.value)} name="Status" className="px-4 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
-                        <option value="">Filter By</option>
-                        <option value="New">New</option>
-                        <option value="Contacted">Contacted</option>
-                        <option value="Follow-up">Follow-up</option>
-                        <option value="Converted">Converted</option>
-                        <option value="Lost">Lost</option>
-                    </select>
-                    <span className='flex justify-center items-center border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm'>
+                <div className='flex flex-col md:flex-row mt-4 gap-3 mx-4 md:mx-6 md:items-center'>
+                    <div className='flex flex-col sm:flex-row gap-3 w-full md:w-auto'>
+                        <select value={filteredStatus} onChange={(e) => handleStatusFilter(e.target.value)} name="Status" className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                            <option value="">Filter By</option>
+                            <option value="New">New</option>
+                            <option value="Contacted">Contacted</option>
+                            <option value="Follow-up">Follow-up</option>
+                            <option value="Converted">Converted</option>
+                            <option value="Lost">Lost</option>
+                        </select>
+                        <span className='flex items-center w-full sm:w-auto border border-gray-300 rounded-md focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent text-sm'>
 
-                        <input
-                            value={searchValue}
-                            onChange={(e) => handleSearch(e.target.value)}
-                            className="px-3 py-2 pr-6 focus:outline-none"
-                            type="text"
-                            placeholder='Search by Name, Company name'
+                            <input
+                                value={searchValue}
+                                onChange={(e) => handleSearch(e.target.value)}
+                                className="px-3 py-2 w-full focus:outline-none rounded-md"
+                                type="text"
+                                placeholder='Search by Name, Company name'
 
-                        />
-                        <svg
-                            className="mr-3 w-4 h-4 text-gray-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                             />
-                        </svg>
-                    </span>
+                            <svg
+                                className="mr-3 w-4 h-4 text-gray-400 shrink-0"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                                />
+                            </svg>
+                        </span>
+                    </div>
 
-                    <span className=''>
-                        <button onClick={() => setOpen(true)} className='cursor-pointer  px-2 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm'>Add Lead 📃</button>
-                    </span>
-
-                    <span className=''>
-                        <button onClick={handleDownloadCSV} className='cursor-pointer px-2 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm'>Download CSV ⬇️</button>
-                    </span>
+                    <div className='flex flex-row gap-3 md:ml-auto'>
+                        <button onClick={() => setOpen(true)} className='cursor-pointer flex-1 md:flex-none px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm whitespace-nowrap'>Add Lead 📃</button>
+                        <button onClick={handleDownloadCSV} className='cursor-pointer flex-1 md:flex-none px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm whitespace-nowrap'>Download CSV ⬇️</button>
+                    </div>
 
                 </div>
-                <div className="overflow-x-auto mx-8 my-6 bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="overflow-x-auto mx-4 md:mx-8 my-6 bg-white rounded-lg shadow-sm border border-gray-200">
                     <table className="w-full h-full text-sm ">
                         <thead className="bg-indigo-100 text-indigo-900">
                             <tr>
